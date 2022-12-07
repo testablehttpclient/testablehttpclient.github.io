@@ -5,4 +5,4 @@ plugins:
 title: TestableHttpClient
 description: An easy way to test HttpClient.
 logo: logo.png
-show_downloads: false
+show_downloads: true
