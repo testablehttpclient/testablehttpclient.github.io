@@ -20,7 +20,7 @@ dotnet add package TestableHttpClient
 
 ## Stub responses
 
-One of the main features of TestableHttpClient is the ability to stub esponses in order to avoid actual calls to the webserver.
+One of the main features of TestableHttpClient is the ability to stub responses in order to avoid actual calls to the webserver.
 
 The following example shows a basic example of this:
 
@@ -103,6 +103,26 @@ In these cases you can either use `Responses.Route` or `Responses.SelectResponse
 
 ### Route based responses
 `Reponses.Route` provides a simplified version of Endpoint routing in ASP.NET Core. It can select a response based on the request uri.
+
+```csharp
+TestableHttpMessageHandler handler = new();
+handler.RespondWith(Route(builder =>
+{
+    builder.Map("/orgs/testablehttpclient", succesResponse);
+    builder.MapFallBackResponse(StatusCode(HttpStatusCode.NotFound));
+}));
+
+HttpClient httpClient = handler.CreateClient();
+GithubApiClient client = new(httpClient);
+
+async Task act() => await client.GetOrganizationAsync("UnknownOrganization");
+await Assert.ThrowsAsync<OrganisationNotFoundException>(act);
+
+Organization result = await client.GetOrganizationAsync("testablehttpclient");
+
+Assert.Equal("testablehttpclient", result.Login);
+Assert.Equal("TestableHttpClient", result.Name);
+```
 
 ### Custom response selection
 When selecting a response based on the request uri is not sufficient and you want more control, you can use `Responses.SelectRespons` where you can provide a fucntion that, based on the `HttpRequestMessage` returns an `IResponse`.
@@ -196,3 +216,10 @@ Uri pattern | Matches
 /get | Matches any URL that uses the path `/get`
 http\*://\* | Matches any URL that uses the scheme `http` or `https` (or any other scheme that starts with `http`)
 localhost:5000 | Matches any URL that uses localhost for the host and port 5000, no matter what scheme or path is used.
+
+## Modifying behaviour
+Some parts of TestableHttpClient can be configured to work differently. This is done via the `Options` property on the `TestableHttpMessageHandler` class.
+
+Currently the following options exist:
+- `JsonSerializerOptions`: Options that are used for serializing an deserializing json content.
+- `UriPatternMatchingOptions`: Options concerning URI pattern matching, mostly case sensitivity.
